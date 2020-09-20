@@ -1,48 +1,48 @@
 # Debian on Pine64 H64B
 
-1.)	Prepare the x86_64 Debian Host
+#### 1.)	Prepare the x86_64 Debian Host
 
-	mkdir /home/youruser/assets		this will be the target for the final image
+`mkdir /home/youruser/assets`		this will be the target for the final image
 
-	Install all required packages for QEMU
+Install all required packages for QEMU
 
-	sudo apt install qemu-efi-aarch64 qemu-system-arm virt-manager
+`sudo apt install qemu-efi-aarch64 qemu-system-arm virt-manager`
 
-	Download the arm64 mini.iso from Debian
+Download the arm64 mini.iso from Debian
 
-	https://d-i.debian.org/daily-images/arm64/daily/netboot/
+`https://d-i.debian.org/daily-images/arm64/daily/netboot/`
 
-2.)	Setup Virtual Machine in QEMU
+#### 2.)	Setup Virtual Machine in QEMU
 
-	open Virtual Machine Manager
-	select “Local install media (ISO image or CDROM)”
-	in “Architecture options” select Architecture: aarch64 and Machine Type: virt
-	next select the just downloaded mini.iso
-	next choose the operating system Debian 10
-	next set Memory to 1024 and CPUs to 4
-	next create a disk image and set size to 4 GiB
-	finally click “Finish” and click “Yes” to make Virtual Network active
+open Virtual Machine Manager
+select `“Local install media (ISO image or CDROM)”`
+in “Architecture options” select `Architecture: aarch64` and `Machine Type: virt`
+next select the just downloaded mini.iso
+next choose the operating system `Debian 10`
+next set Memory to `1024` and CPUs to `4`
+next create a disk image and set size to `4 GiB`
+finally click “Finish” and click “Yes” to make Virtual Network active
 
-3.)	Install Debian for arm64 in your Virtual Machine
+#### 3.)	Install Debian for arm64 in your Virtual Machine
 
-	click into the black area of the VMs Window to capture Mouse and Keyboard
-	hit Enter to start text based Debian Installer
-	create root password and youruser with password as they will be on the final image
-	partition manually the disk image as follows
+click into the black area of the VMs Window to capture Mouse and Keyboard
+hit Enter to start text based Debian Installer
+create `root` password and `youruser` with password as they will be on the final image
+partition manually the disk image as follows
+
 	Partition 1: Size 100M, Name efi, Use as EFI System Partition, Bootable flag on 
-	Partition 2: Size 100M, Name boot, Use as Ext 2 file system, Mount point /boot
- 		          Bootable flag off
-	Partition 3: Size max, Use as Ext 4 journaling file system, Mount point /
- 		          Bootable flag off		
-	confirm that you don’t want to create Swap Space by clicking <NO>
-	in “Software selection” select only SSH server and standard system utilities
-	and finish the installation, once finished reboot into the newly installed system
+	Partition 2: Size 100M, Name boot, Use as Ext 2 file system, Mount point /boot   Bootable flag off
+	Partition 3: Size max, Use as Ext 4 journaling file system, Mount point /   Bootable flag off
+
+confirm that you don’t want to create Swap Space by clicking `<NO>`
+in “Software selection” select only `SSH server` and `standard system utilities`
+and finish the installation, once finished reboot into the newly installed system
 	
-4.)	DTB file handling
+#### 4.)	DTB file handling
 
-	mkdir /boot/dtbs
+`mkdir /boot/dtbs`
 
-	nano /etc/kernel/postinst.d/copy-dtbs
+`nano /etc/kernel/postinst.d/copy-dtbs`
 
 	#!/bin/sh
 	
@@ -52,15 +52,15 @@
 	echo Copying current dtb files to /boot/dtbs….
 	cp -a /usr/lib/linux-image-${version}/. /boot/dtbs/
 
-	chmod +x /etc/kernel/postinst.d/copy-dtbs
+`chmod +x /etc/kernel/postinst.d/copy-dtbs`
 
 	/etc/kernel/postinst.d/copy-dtbs `uname -r`
 
-5.)	Bootloader configuration
+#### 5.)	Bootloader configuration
 
-	mkdir /boot/extlinux
+`mkdir /boot/extlinux`
  
-	nano /boot/extlinux/extlinux.conf
+`nano /boot/extlinux/extlinux.conf`
 
 	TIMEOUT 2
 	PROMPT 1
@@ -73,17 +73,19 @@
 	DEVICETREEDIR /dtbs
 	APPEND console=tty1 console=ttyS2,115200n8 root=LABEL=root rw rootwait
 
-	apt purge grub-efi-arm64
-	apt autoremove
-	apt autoclean
+`apt purge grub-efi-arm64`
 
-	shutdown -h now
+`apt autoremove`
 
-6.)	Creating tar archives of our VM
+`apt autoclean`
 
-	sudo modprobe nbd max_part=8
+`shutdown -h now`
 
-	sudo qemu-nbd --connect=/dev/nbd0 /var/lib/libvirt/images/debian10-aarch64-clone.qcow2
+#### 6.)	Creating tar archives of our VM
+
+`sudo modprobe nbd max_part=8`
+
+`sudo qemu-nbd --connect=/dev/nbd0 /var/lib/libvirt/images/debian10-aarch64-clone.qcow2`
 	
 	sudo mount /dev/nbd0p2 /mnt
 	cd /mnt
@@ -97,13 +99,13 @@
 	cd
 	umount /mnt
 
-	sudo qemu-nbd -d /dev/nbd0
+`sudo qemu-nbd -d /dev/nbd0`
 
-7.)	Install Cross Compiler for building U-Boot on our  x86_64 Debian Host
+#### 7.)	Install Cross Compiler for building U-Boot on our  x86_64 Debian Host
 
-	sudo apt install gcc make bc git device-tree-compiler build-essential libssl-dev python3-dev bison flex libssl-dev swig gcc-aarch64-linux-gnu gcc-arm-none-eabi
+`sudo apt install gcc make bc git device-tree-compiler build-essential libssl-dev python3-dev bison flex libssl-dev swig gcc-aarch64-linux-gnu gcc-arm-none-eabi`
 
-8.)	Build U-Boot on our  x86_64 Debian Host
+#### 8.)	Build U-Boot on our  x86_64 Debian Host
 
 	git clone https://github.com/ARM-software/arm-trusted-firmware
 	cd arm-trusted-firmware
@@ -123,14 +125,15 @@
 	cp /home/youruser/u-boot/idbloader.img /home/youruser/assets/
 	cp /home/youruser/u-boot/u-boot.itb /home/youruser/assets/
 
-9.)	Assembling the final image for our Pine64 H64B SBC
+#### 9.)	Assembling the final image for our Pine64 H64B SBC
 
-	sudo apt install kpartx
+`sudo apt install kpartx`
 
-	cd /home/youruser/assets
-	dd if=/dev/zero of=debian-pineh64b.img bs=1M count=4096
+`cd /home/youruser/assets`
 
-	nano sfdisk.template
+`dd if=/dev/zero of=debian-pineh64b.img bs=1M count=4096`
+
+`nano sfdisk.template`
 
 	label: mbr
 	unit: sectors
@@ -140,8 +143,9 @@
 	start=  18432, size=  614400, bootable
 	start= 632832
 
-	sudo /sbin/sfdisk debian-pineh64b.img < sfdisk.template
-	sudo kpartx -v -a debian-pineh64b.img
+`sudo /sbin/sfdisk debian-pineh64b.img < sfdisk.template`
+
+`sudo kpartx -v -a debian-pineh64b.img`
 
 	sudo mkfs.ext2 -m0 -L boot /dev/mapper/loop0p2
 	sudo mount /dev/mapper/loop0p2 /mnt
@@ -162,7 +166,7 @@
 	cd home/youruser/assets/
 	dd if=u-boot-sunxi-with-spl.bin of=debian-pineh64b.img seek=64 conv=notrunc
 
-10.)	Flashing the newly build image onto eMMC-Module for our Pine64 Rock64 SBC
+#### 10.)	Flashing the newly build image onto eMMC-Module for our Pine64 Rock64 SBC
 
 	lsblk
 	(sudo umount /dev/sdX1)
@@ -172,13 +176,11 @@
 	cd
 
 
-11.)	Use GParted and create a SWAP partition of 1GB at the end of the eMMC-Module and then extend
-	the /root partition to fill up the empty space between. (leave 1MB as free space at the end of eMMC)
+#### 11.)	Use GParted and create a SWAP partition of 1GB at the end of the eMMC-Module and then extend the /root partition to fill up the empty space between. (leave 1MB as free space at the end of eMMC)
 
-12.)	Installing the eMMC-Module onto your Pine64 Rock64 SBC, connecting HDMI,
-	Mouse and Keyboard and power it up.
+#### 12.)	Installing the eMMC-Module onto your Pine64 Rock64 SBC, connecting HDMI, Mouse and Keyboard and power it up.
 
-	nano /etc/network/interfaces			change interface to eth0
+`nano /etc/network/interfaces`			change interface to eth0
 
 	# This file describes the network interfaces available on your system
 	# and how to activate them. For more information, see interfaces(5).
@@ -194,7 +196,7 @@
 	iface eth0 inet dhcp
 
 
-	nano /etc/fstab					add SWAP and replace Labels with device names
+`nano /etc/fstab`					add SWAP and replace Labels with device names
 
 	# /etc/fstab: static file system information.
 	#
@@ -211,19 +213,21 @@
 	/dev/mmcblk1p4  swap    swap    defaults        0       0
 	/dev/sr0        /media/cdrom0   udf,iso9660 user,noauto     0       0
 
+`reboot`
 
-	reboot
+check that network is working
 
-	ip a				check that network is working
+`ip a`
 
-	apt update			perform system update
+perform system update
+
+	apt update
 	apt upgrade
 	apt dist-upgrade
 	apt autoremove
 	apt autoclean
 
-
-	Done, enjoy your setup.
+#### Done, enjoy your setup.
 
 #### Credit to https://www.kulesz.me/post/140-debian-devuan-arm64-install/ for providing the initial guide and concept.
 #### And many many thanks to https://sourceforge.net/projects/manjaro-arm-pineh64/ for publishing the dtb file with working eMMC support.
