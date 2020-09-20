@@ -226,3 +226,4 @@
 	Done, enjoy your setup.
 
 #### Credit to https://www.kulesz.me/post/140-debian-devuan-arm64-install/ for providing the initial guide and concept.
+#### And many many thanks to https://sourceforge.net/projects/manjaro-arm-pineh64/ for publishing the dtb file with working eMMC support.
