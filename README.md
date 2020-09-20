@@ -44,37 +44,34 @@
 
 	nano /etc/kernel/postinst.d/copy-dtbs
 
->	#!/bin/sh
->	
->	set -e
->	version=”$1”
->	
->	echo Copying current dtb files to /boot/dtbs….
->	cp -a /usr/lib/linux-image-${version}/. /boot/dtbs/
+	#!/bin/sh
+	
+	set -e
+	version=”$1”
+	
+	echo Copying current dtb files to /boot/dtbs….
+	cp -a /usr/lib/linux-image-${version}/. /boot/dtbs/
 
 	chmod +x /etc/kernel/postinst.d/copy-dtbs
 
 	/etc/kernel/postinst.d/copy-dtbs `uname -r`
 
-
-
-
 5.)	Bootloader configuration
 
-	 mkdir /boot/extlinux
+	mkdir /boot/extlinux
  
-	 nano /boot/extlinux/extlinux.conf
+	nano /boot/extlinux/extlinux.conf
 
->	TIMEOUT 2
->	PROMPT 1
->	DEFAULT debian
->
->	LABEL debian
->	MENU LABEL Debian
->	KERNEL /vmlinuz
->	INITRD /initrd.img
->	DEVICETREEDIR /dtbs
->	APPEND console=tty1 console=ttyS2,115200n8 root=LABEL=root rw rootwait
+	TIMEOUT 2
+	PROMPT 1
+	DEFAULT debian
+
+	LABEL debian
+	MENU LABEL Debian
+	KERNEL /vmlinuz
+	INITRD /initrd.img
+	DEVICETREEDIR /dtbs
+	APPEND console=tty1 console=ttyS2,115200n8 root=LABEL=root rw rootwait
 
 	apt purge grub-efi-arm64
 	apt autoremove
@@ -101,9 +98,6 @@
 	umount /mnt
 
 	sudo qemu-nbd -d /dev/nbd0
-
-
-
 
 7.)	Install Cross Compiler for building U-Boot on our  x86_64 Debian Host
 
@@ -138,13 +132,13 @@
 
 	nano sfdisk.template
 
->	label: mbr
->	unit: sectors
->	first-lba: 64
->
->	start=   2048, size=   16384
->	start=  18432, size=  614400, bootable
->	start= 632832
+	label: mbr
+	unit: sectors
+	first-lba: 64
+
+	start=   2048, size=   16384
+	start=  18432, size=  614400, bootable
+	start= 632832
 
 	sudo /sbin/sfdisk debian-pineh64b.img < sfdisk.template
 	sudo kpartx -v -a debian-pineh64b.img
@@ -186,36 +180,36 @@
 
 	nano /etc/network/interfaces			change interface to eth0
 
->	# This file describes the network interfaces available on your system
->	# and how to activate them. For more information, see interfaces(5).
->
->	source /etc/network/interfaces.d/*
->
->	# The loopback network interface
->	auto lo
->	iface lo inet loopback
->
->	# The primary network interface
->	allow-hotplug eth0
->	iface eth0 inet dhcp
+	# This file describes the network interfaces available on your system
+	# and how to activate them. For more information, see interfaces(5).
+
+	source /etc/network/interfaces.d/*
+
+	# The loopback network interface
+	auto lo
+	iface lo inet loopback
+
+	# The primary network interface
+	allow-hotplug eth0
+	iface eth0 inet dhcp
 
 
 	nano /etc/fstab					add SWAP and replace Labels with device names
 
->	# /etc/fstab: static file system information.
->	#
->	# Use 'blkid' to print the universally unique identifier for a
->	# device; this may be used with UUID= as a more robust way to name devices
->	# that works even if disks are added and removed. See fstab(5).
->	#
->	# systemd generates mount units based on this file, see systemd.mount(5).
->	# Please run 'systemctl daemon-reload' after making changes here.
->	#
->	# <file system> <mount point>   <type>  <options>       <dump>  <pass>
->	/dev/mmcblk1p2   /boot           ext2    defaults        0       2
->	/dev/mmcblk1p3   /               ext4    errors=remount-ro 0       1
->	/dev/mmcblk1p4  swap    swap    defaults        0       0
->	/dev/sr0        /media/cdrom0   udf,iso9660 user,noauto     0       0
+	# /etc/fstab: static file system information.
+	#
+	# Use 'blkid' to print the universally unique identifier for a
+	# device; this may be used with UUID= as a more robust way to name devices
+	# that works even if disks are added and removed. See fstab(5).
+	#
+	# systemd generates mount units based on this file, see systemd.mount(5).
+	# Please run 'systemctl daemon-reload' after making changes here.
+	#
+	# <file system> <mount point>   <type>  <options>       <dump>  <pass>
+	/dev/mmcblk1p2   /boot           ext2    defaults        0       2
+	/dev/mmcblk1p3   /               ext4    errors=remount-ro 0       1
+	/dev/mmcblk1p4  swap    swap    defaults        0       0
+	/dev/sr0        /media/cdrom0   udf,iso9660 user,noauto     0       0
 
 
 	reboot
