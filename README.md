@@ -142,6 +142,7 @@ type `o` this will clear out any partitions on the drive
 `cd /home/youruser/assets`
 
 `mkdir boot`	this is in your home directory ! → /home/youruser/assets/boot
+
 `mkdir root`	this is in your home directory ! → /home/youruser/assets/root
 
 	sudo mkfs.ext2 -m0 -L boot /dev/sdX1
