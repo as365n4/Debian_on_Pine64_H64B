@@ -127,7 +127,8 @@ and finish the installation, once finished reboot into the newly installed syste
 
 #### 9.)	Flashing Debian to eMMC for our Pine64 H64B SBC
 
-`sudo fdisk /dev/sdX`	
+`sudo fdisk /dev/sdX`
+
 type `o` this will clear out any partitions on the drive
 , type `p` to list partitions, there should be no partitions left
 , type `n` for new partition, then `p` for primary, `1` for the first partition on the drive
