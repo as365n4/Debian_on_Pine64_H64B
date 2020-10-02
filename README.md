@@ -105,7 +105,7 @@ and finish the installation, once finished reboot into the newly installed syste
 
 `sudo apt install gcc make bc git device-tree-compiler build-essential libssl-dev python3-dev bison flex libssl-dev swig gcc-aarch64-linux-gnu gcc-arm-none-eabi`
 
-#### 8.)	Build U-Boot on our  x86_64 Debian Host
+#### 8.)	Build U-Boot on our x86_64 Debian Host
 
 	git clone https://github.com/ARM-software/arm-trusted-firmware
 	cd arm-trusted-firmware
@@ -125,62 +125,57 @@ and finish the installation, once finished reboot into the newly installed syste
 	cp /home/youruser/u-boot/idbloader.img /home/youruser/assets/
 	cp /home/youruser/u-boot/u-boot.itb /home/youruser/assets/
 
-#### 9.)	Assembling the final image for our Pine64 H64B SBC
+#### 9.)	Flashing Debian to eMMC for our Pine64 H64B SBC
 
-`sudo apt install kpartx`
+`sudo fdisk /dev/sdX`	type `o` this will clear out any partitions on the drive
+, type `p` to list partitions, there should be no partitions left
+, type `n` for new partition, then `p` for primary, `1` for the first partition on the drive
+, `2048` for the first sector, and `647167` for the last sector, then type `a`
+, then type `n` for new partition, then `p` for primary, `2` for the second partition on the drive
+, `647168` for the first sector, and `28211199` for the last sector, then type `n`
+, then `p` for primary, `3` for the third partition on the drive, `28211200` for the first sector
+, and `30308351` for the last sector, then type `t`, and `3` for the third partition, and `82` for the Hex Code
+, then write the partition table and exit by typing `w`
 
 `cd /home/youruser/assets`
 
-`dd if=/dev/zero of=debian-pineh64b.img bs=1M count=4096`
+`mkdir boot`	this is in your home directory ! → /home/youruser/assets/boot
+`mkdir root`	this is in your home directory ! → /home/youruser/assets/root
 
-`nano sfdisk.template`
-
-	label: mbr
-	unit: sectors
-	first-lba: 64
-
-	start=   2048, size=   16384
-	start=  18432, size=  614400, bootable
-	start= 632832
-
-`sudo /sbin/sfdisk debian-pineh64b.img < sfdisk.template`
-
-`sudo kpartx -v -a debian-pineh64b.img`
-
-	sudo mkfs.ext2 -m0 -L boot /dev/mapper/loop0p2
-	sudo mount /dev/mapper/loop0p2 /mnt
-	cd /mnt
+	sudo mkfs.ext2 -m0 -L boot /dev/sdX1
+	sudo mount /dev/sdX1 /home/youruser/assets/boot
+	cd /home/youruser/assets/boot
 	sudo tar xzvpf /home/youruser/assets/debian-aarch64-bootfs.tar.gz .
 	sync
 	cd
-	sudo umount /mnt
+	sudo cp /home/youruser/assets/sun50i-h6-pine-h64-model-b.dtb /home/youruser/assets/boot/dtbs/allwinner/sun50i-h6-pine-h64-model-b.dtb
+	sudo umount /home/youruser/assets/boot
 
-	sudo mkfs.ext4 -L root /dev/mapper/loop0p3
-	sudo mount /dev/mapper/loop0p3 /mnt
-	cd /mnt
+	sudo mkfs.ext4 -L root /dev/sdX2
+	sudo mount /dev/sdX2 /home/youruser/assets/root
+	cd /home/youruser/assets/root
 	sudo tar xzvpf /home/youruser/assets/debian-aarch64-rootfs.tar.gz .
 	sync
 	cd
-	sudo umount /mnt
+	
+`nano /home/youruser/assets/root/etc/fstab`	amend as below
 
-	cd home/youruser/assets/
-	dd if=u-boot-sunxi-with-spl.bin of=debian-pineh64b.img seek=64 conv=notrunc
+	# /etc/fstab: static file system information.
+	#
+	# Use 'blkid' to print the universally unique identifier for a
+	# device; this may be used with UUID= as a more robust way to name devices
+	# that works even if disks are added and removed. See fstab(5).
+	#
+	# systemd generates mount units based on this file, see systemd.mount(5).
+	# Please run 'systemctl daemon-reload' after making changes here.
+	#
+	# <file system> <mount point> <type> <options> <dump> <pass>
+	/dev/mmcblk1p2 /boot	ext2 defaults  0  2
+	/dev/mmcblk1p3 /	ext4 errors=remount-ro  0  1
+	/dev/mmcblk1p4 swap	swap defaults  0  0
+	/dev/sr0       /media/cdrom0 udf,iso9660 user,noauto  0  0
 
-#### 10.)	Flashing the newly build image onto eMMC-Module for our Pine64 Rock64 SBC
-
-	lsblk
-	(sudo umount /dev/sdX1)
-
-	cd home/youruser/assets/
-	sudo dd if=debian-pineh64b.img of=/dev/sdX bs=1M
-	cd
-
-
-#### 11.)	Use GParted and create a SWAP partition of 1GB at the end of the eMMC-Module and then extend the /root partition to fill up the empty space between. (leave 1MB as free space at the end of eMMC)
-
-#### 12.)	Installing the eMMC-Module onto your Pine64 Rock64 SBC, connecting HDMI, Mouse and Keyboard and power it up.
-
-`nano /etc/network/interfaces`			change interface to eth0
+`nano /home/youruser/assets/root/etc/network/interfaces`	change interface to eth0
 
 	# This file describes the network interfaces available on your system
 	# and how to activate them. For more information, see interfaces(5).
@@ -195,29 +190,17 @@ and finish the installation, once finished reboot into the newly installed syste
 	allow-hotplug eth0
 	iface eth0 inet dhcp
 
+`sudo umount /home/youruser/assets/root`
 
-`nano /etc/fstab`					add SWAP and replace Labels with device names
+`sudo mkswap /dev/sdX3`
 
-	# /etc/fstab: static file system information.
-	#
-	# Use 'blkid' to print the universally unique identifier for a
-	# device; this may be used with UUID= as a more robust way to name devices
-	# that works even if disks are added and removed. See fstab(5).
-	#
-	# systemd generates mount units based on this file, see systemd.mount(5).
-	# Please run 'systemctl daemon-reload' after making changes here.
-	#
-	# <file system> <mount point>   <type>  <options>       <dump>  <pass>
-	/dev/mmcblk1p2   /boot           ext2    defaults        0       2
-	/dev/mmcblk1p3   /               ext4    errors=remount-ro 0       1
-	/dev/mmcblk1p4  swap    swap    defaults        0       0
-	/dev/sr0        /media/cdrom0   udf,iso9660 user,noauto     0       0
+`cd home/youruser/assets/`
 
-`reboot`
+`sudo dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8`
 
-check that network is working
+#### 10.)	Installing the eMMC-Module onto your Pine64 Rock64 SBC, connecting HDMI, Mouse and Keyboard and power it up.
 
-`ip a`
+`ip a`	check that network is working
 
 perform system update
 
