@@ -66,7 +66,6 @@ and finish the installation, once finished reboot into the newly installed syste
 	KERNEL /vmlinuz
 	FDT /dtbs/allwinner/sun50i-h6-pine-h64-model-b.dtb
 	INITRD /initrd.img
-	DEVICETREEDIR /dtbs
 	APPEND console=tty1 root=LABEL=root rw rootwait
 
 `apt purge grub-efi-arm64`
