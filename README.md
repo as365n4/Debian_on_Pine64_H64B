@@ -30,8 +30,8 @@ click into the black area of the VMs Window to capture Mouse and Keyboard
 , create `root` password and `youruser` with password as they will be on the final image
 , partition manually the disk image as follows
 
-	Partition 1: Size 100M, Name efi, Use as EFI System Partition, Bootable flag on 
-	Partition 2: Size 100M, Name boot, Use as Ext 2 file system, Mount point /boot   Bootable flag off
+	Partition 1: Size 100 M, Name efi, Use as EFI System Partition, Bootable flag on 
+	Partition 2: Size 100 M, Name boot, Use as Ext 2 file system, Mount point /boot   Bootable flag off
 	Partition 3: Size max, Use as Ext 4 journaling file system, Mount point /   Bootable flag off
 
 confirm that you don’t want to create Swap Space by clicking `<NO>`
@@ -62,16 +62,12 @@ and finish the installation, once finished reboot into the newly installed syste
  
 `nano /boot/extlinux/extlinux.conf`
 
-	TIMEOUT 2
-	PROMPT 1
-	DEFAULT debian
-
-	LABEL debian
-	MENU LABEL Debian
+	LABEL Debian
 	KERNEL /vmlinuz
+	FDT /dtbs/allwinner/sun50i-h6-pine-h64-model-b.dtb
 	INITRD /initrd.img
 	DEVICETREEDIR /dtbs
-	APPEND console=tty1 console=ttyS2,115200n8 root=LABEL=root rw rootwait
+	APPEND console=tty1 root=LABEL=root rw rootwait
 
 `apt purge grub-efi-arm64`
 
@@ -116,14 +112,13 @@ and finish the installation, once finished reboot into the newly installed syste
 	
 	git clone git://git.denx.de/u-boot.git
 	cd u-boot
-	git tag					remember last stable (v2020.07)
-	git checkout v2020.07
+	git tag					remember last stable (v2020.10)
+	git checkout v2020.10
 	ln -s /home/youruser/arm-trusted-firmware/build/sun50i_h6/release/bl31/bl31.elf bl31.elf
 	make CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.elf pine_h64_defconfig
 	make -j4 CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.elf all u-boot.itb
 
-	cp /home/youruser/u-boot/idbloader.img /home/youruser/assets/
-	cp /home/youruser/u-boot/u-boot.itb /home/youruser/assets/
+	cp -r /home/youruser/u-boot/u-boot-sunxi-with-spl.bin /home/youruser/assets/
 
 #### 9.)	Flashing Debian to eMMC for our Pine64 H64B SBC
 
@@ -132,7 +127,7 @@ and finish the installation, once finished reboot into the newly installed syste
 type `o` this will clear out any partitions on the drive
 , type `p` to list partitions, there should be no partitions left
 , type `n` for new partition, then `p` for primary, `1` for the first partition on the drive
-, `2048` for the first sector, and `647167` for the last sector, then type `a`
+, `62500` for the first sector, and `647167` for the last sector, then type `a`
 , then type `n` for new partition, then `p` for primary, `2` for the second partition on the drive
 , `647168` for the first sector, and `28211199` for the last sector, then type `n`
 , then `p` for primary, `3` for the third partition on the drive, `28211200` for the first sector
@@ -150,7 +145,7 @@ type `o` this will clear out any partitions on the drive
 	cd /home/youruser/assets/boot
 	sudo tar xzvpf /home/youruser/assets/debian-aarch64-bootfs.tar.gz .
 	sync
-	cd
+	cd ..
 	sudo cp /home/youruser/assets/sun50i-h6-pine-h64-model-b.dtb /home/youruser/assets/boot/dtbs/allwinner/sun50i-h6-pine-h64-model-b.dtb
 	sudo umount /home/youruser/assets/boot
 
@@ -159,9 +154,9 @@ type `o` this will clear out any partitions on the drive
 	cd /home/youruser/assets/root
 	sudo tar xzvpf /home/youruser/assets/debian-aarch64-rootfs.tar.gz .
 	sync
-	cd
+	cd ..
 	
-`nano /home/youruser/assets/root/etc/fstab`	amend as below
+`sudo nano /home/youruser/assets/root/etc/fstab`	amend as below
 
 	# /etc/fstab: static file system information.
 	#
@@ -173,12 +168,12 @@ type `o` this will clear out any partitions on the drive
 	# Please run 'systemctl daemon-reload' after making changes here.
 	#
 	# <file system> <mount point> <type> <options> <dump> <pass>
-	/dev/mmcblk1p2 /boot	ext2 defaults  0  2
-	/dev/mmcblk1p3 /	ext4 errors=remount-ro  0  1
-	/dev/mmcblk1p4 swap	swap defaults  0  0
+	/dev/mmcblk2p1 /boot	ext2 defaults  0  2
+	/dev/mmcblk2p2 /	ext4 errors=remount-ro  0  1
+	/dev/mmcblk2p3 swap	swap defaults  0  0
 	/dev/sr0       /media/cdrom0 udf,iso9660 user,noauto  0  0
 
-`nano /home/youruser/assets/root/etc/network/interfaces`	change interface to eth0
+`sudo nano /home/youruser/assets/root/etc/network/interfaces`	change interface to eth0
 
 	# This file describes the network interfaces available on your system
 	# and how to activate them. For more information, see interfaces(5).
@@ -190,6 +185,7 @@ type `o` this will clear out any partitions on the drive
 	iface lo inet loopback
 
 	# The primary network interface
+	auto eth0
 	allow-hotplug eth0
 	iface eth0 inet dhcp
 
@@ -216,4 +212,4 @@ perform system update
 #### Done, enjoy your setup.
 
 #### Credit to https://www.kulesz.me/post/140-debian-devuan-arm64-install/ for providing the initial guide and concept.
-#### And many many thanks to https://sourceforge.net/projects/manjaro-arm-pineh64/ for publishing the dtb file with working eMMC support.
+#### And many many thanks to https://sourceforge.net/projects/manjaro-arm-pineh64/ for publishing the dtb file with working WiFi and eMMC support.
