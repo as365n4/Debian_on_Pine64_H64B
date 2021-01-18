@@ -109,18 +109,18 @@ and finish the installation, once finished reboot into the newly installed syste
 
 	git clone https://github.com/ARM-software/arm-trusted-firmware
 	cd arm-trusted-firmware
-	git tag					remember last stable (v2.3)
-	git checkout v2.3
+	git tag					remember last stable (v2.4)
+	git checkout v2.4
 	make CROSS_COMPILE=aarch64-linux-gnu- PLAT=sun50i_h6 bl31
 	cd ..
 	
 	git clone git://git.denx.de/u-boot.git
 	cd u-boot
-	git tag					remember last stable (v2020.10)
-	git checkout v2020.10
-	ln -s /home/youruser/arm-trusted-firmware/build/sun50i_h6/release/bl31/bl31.elf bl31.elf
+	git tag					remember last stable (v2021.01)
+	git checkout v2021.01
+	ln -s /home/youruser/arm-trusted-firmware/build/sun50i_h6/release/bl31/bl31.bin bl31.bin
 	make CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.elf pine_h64_defconfig
-	make -j4 CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.elf all u-boot.itb
+	make -j4 CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.bin
 
 	cp -r /home/youruser/u-boot/u-boot-sunxi-with-spl.bin /home/youruser/assets/
 
@@ -172,9 +172,9 @@ type `o` this will clear out any partitions on the drive
 	# Please run 'systemctl daemon-reload' after making changes here.
 	#
 	# <file system> <mount point> <type> <options> <dump> <pass>
-	/dev/mmcblk2p1 /boot		ext2		defaults  		0  2
-	/dev/mmcblk2p2 /		ext4		errors=remount-ro  	0  1
-	/dev/mmcblk2p3 swap		swap		defaults 		0  0
+	/dev/mmcblk1p1 /boot		ext2		defaults  		0  2
+	/dev/mmcblk1p2 /		ext4		errors=remount-ro  	0  1
+	/dev/mmcblk1p3 swap		swap		defaults 		0  0
 	/dev/sr0       /media/cdrom0	udf,iso9660	user,noauto		0  0
 
 `sudo nano /home/youruser/assets/root/etc/network/interfaces`	change interface to eth0
