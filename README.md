@@ -63,15 +63,14 @@ and finish the installation, once finished reboot into the newly installed syste
 `nano /boot/extlinux/extlinux.conf`
 
 	TIMEOUT 2
-	PROMPT 1
 	DEFAULT debian
 	
 	LABEL debian
-	MENU LABEL Debian
-	KERNEL /vmlinuz
-	INITRD /initrd.img
-	DEVICETREEDIR /dtbs
-	APPEND console=tty1 root=LABEL=root rw rootwait
+		MENU LABEL Debian
+		KERNEL /vmlinuz
+		INITRD /initrd.img
+		FDT /dtbs/allwinner/sun50i-h6-pine-h64-model-b.dtb
+		APPEND console=tty1 root=LABEL=root rw rootwait
 
 `apt purge grub-efi-arm64`
 
@@ -90,13 +89,13 @@ and finish the installation, once finished reboot into the newly installed syste
 	sudo mount /dev/nbd0p2 /mnt
 	cd /mnt
 	sudo tar cfvzp /home/youruser/assets/debian-aarch64-bootfs.tar.gz .
-	cd
+	cd ..
 	umount /mnt
 
 	sudo mount /dev/nbd0p3 /mnt
 	cd /mnt
 	sudo tar cfvzp /home/youruser/assets/debian-aarch64-rootfs.tar.gz .
-	cd
+	cd ..
 	umount /mnt
 
 `sudo qemu-nbd -d /dev/nbd0`
@@ -118,11 +117,12 @@ and finish the installation, once finished reboot into the newly installed syste
 	cd u-boot
 	git tag					remember last stable (v2021.01)
 	git checkout v2021.01
-	ln -s /home/youruser/arm-trusted-firmware/build/sun50i_h6/release/bl31/bl31.bin bl31.bin
-	make CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.elf pine_h64_defconfig
+	ln -s /home/youruser/assets/arm-trusted-firmware/build/sun50i_h6/release/bl31.bin bl31.bin
+	make CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.bin pine_h64_defconfig
 	make -j4 CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.bin
 
-	cp -r /home/youruser/u-boot/u-boot-sunxi-with-spl.bin /home/youruser/assets/
+	cp -r /home/youruser/assets/u-boot/u-boot-sunxi-with-spl.bin /home/youruser/assets/
+	cd ..
 
 #### 9.)	Flashing Debian to eMMC for our Pine64 H64B SBC
 
@@ -199,7 +199,7 @@ type `o` this will clear out any partitions on the drive
 
 `cd home/youruser/assets/`
 
-`sudo dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8`
+`sudo dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8 conv=notrunc`
 
 #### 10.)	Installing the eMMC-Module onto your Pine64 Rock64 SBC, connecting HDMI, Mouse and Keyboard and power it up.
 
