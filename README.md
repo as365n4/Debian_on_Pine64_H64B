@@ -227,7 +227,7 @@ now update the system with
 	apt autoremove
 	apt autoclean
 
-#### 12.)	Add missing WiFi/Bluetooth driver for PineH64B board, install the firmware for RTL8723BS Chipset with
+#### 12.)	Add missing WiFi/Bluetooth driver for Pine64 H64B board, install the firmware for RTL8723BS Chipset with
 
 `apt install firmware-realtek`
 
