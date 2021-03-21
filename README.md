@@ -106,6 +106,8 @@ and finish the installation, once finished reboot into the newly installed syste
 
 #### 8.)	Build U-Boot on our x86_64 Debian Host
 
+`cd /home/youruser/assets/`
+
 	git clone https://github.com/ARM-software/arm-trusted-firmware
 	cd arm-trusted-firmware
 	git tag					remember last stable (v2.4)
@@ -201,11 +203,23 @@ type `o` this will clear out any partitions on the drive
 
 `sudo dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8 conv=notrunc`
 
-#### 10.)	Installing the eMMC-Module onto your Pine64 Rock64 SBC, connecting HDMI, Mouse and Keyboard and power it up.
+#### 10.)	Install the eMMC-Module onto your Pine64 H64B SBC, connecting HDMI, Mouse and Keyboard and power it up and log-in as root.
 
 `ip a`	check that network is working
 
-perform system update
+#### 11.)	Activate non-free repositories of Debian, edit the config of Debians Advanced Package Tool as below
+
+`nano /etc/apt/sources.list`
+
+	# deb http://deb.debian.org/debian/ bullseye main
+	
+	deb http://deb.debian.org/debian bullseye main contrib non-free
+	deb-src http://deb.debian.org/debian/ bullseye main contrib non-free
+	
+	deb http://security.debian.org/debian-security bullseye-security main contrib non-free
+	deb-src http://security.debian.org/debian-security bullseye-security main contrib non-free
+
+now update the system with
 
 	apt update
 	apt upgrade
@@ -213,7 +227,76 @@ perform system update
 	apt autoremove
 	apt autoclean
 
+#### 12.)	Add missing WiFi/Bluetooth driver for PineH64B board, install the firmware for RTL8723BS Chipset with
+
+`apt install firmware-realtek`
+
+`shutdown -r now`	reboots the system
+
+#### 13.)	Configure WiFi, working Ethernet connection required
+
+`apt install iw iwd`
+
+	systemctl enable iwd.service	installs wireless service iwd
+	systemctl start iwd.service	starts iwd
+	systemctl status iwd.service	check if iwd is running
+
+	iwctl	 			bash changes to iwd interactive prompt
+
+	device list			shows all wireless devices
+	device wlan0 show		shows details about wireless device
+	station wlan0 scan		scans for wireless networks
+	station wlan0 get-networks	shows all available wireless networks
+	station wlan0 connect SSID	connects to specified network, may ask for passphrase
+	station wlan0 show		check connection status of wireless network
+
+	known-networks list		shows all previously connected wireless networks
+	known-networks SSID forget	deletes previously connected wireless network
+
+	quit				reverts back to bash
+
+`nano /etc/network/interfaces`	 amend as below to add WiFi
+
+	# This file describes the network interfaces available on your system
+	# and how to activate them. For more information, see interfaces(5).
+	source /etc/network/interfaces.d/*
+	
+	# The loopback network interface
+	auto lo
+	iface lo inet loopback
+	
+	# The primary network interface
+	auto eth0
+	allow-hotplug eth0
+	iface eth0 inet dhcp
+	
+	# The wireless network interface
+	auto wlan0
+	iface wlan0 inet dhcp
+
+`nano /etc/resolv.conf`
+
+	nameserver 192.168.1.xxx		xxx should match your DNS Server
+
+`sudo reboot`	once board is up, check with `ip a` for success
+
+#### 14.)	Activate Filesystem Checks at startup
+
+`tune2fs -c 1 /dev/mmcblk1p1`
+`tune2fs -c 1 /dev/mmcblk1p2`
+
 #### Done, enjoy your setup.
 
 #### Credit to https://www.kulesz.me/post/140-debian-devuan-arm64-install/ for providing the initial guide and concept.
 #### And many many thanks to https://sourceforge.net/projects/manjaro-arm-pineh64/ for publishing the dtb file with working WiFi and eMMC support.
+
+#### What is working and which bit of the board is not working...?
+This status report is based on Debian 5.10.0-4 with Kernel 5.10.19-1
+eMMC is working
+HDMI Video is working
+HDMI Audio does not work
+Ethernet is working
+WiFi and Bluetooth have experimental support as driver is pulled from stagging and quality is unknown
+USB3 is not working and not activated at all
+Analog Audio is not working
+Suspend is not working, because of missing SPC Blob in u-boot
