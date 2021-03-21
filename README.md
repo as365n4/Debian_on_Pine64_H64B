@@ -278,11 +278,12 @@ now update the system with
 
 	nameserver 192.168.1.xxx		xxx should match your DNS Server
 
-`sudo reboot`	once board is up, check with `ip a` for success
+`shutdown -r now`	once board is up, check with `ip a` for success
 
 #### 14.)	Activate Filesystem Checks at startup
 
 `tune2fs -c 1 /dev/mmcblk1p1`
+
 `tune2fs -c 1 /dev/mmcblk1p2`
 
 #### Done, enjoy your setup.
@@ -291,12 +292,21 @@ now update the system with
 #### And many many thanks to https://sourceforge.net/projects/manjaro-arm-pineh64/ for publishing the dtb file with working WiFi and eMMC support.
 
 #### What is working and which bit of the board is not working...?
+
 This status report is based on Debian 5.10.0-4 with Kernel 5.10.19-1
+
 eMMC is working
+
 HDMI Video is working
+
 HDMI Audio does not work
+
 Ethernet is working
+
 WiFi and Bluetooth have experimental support as driver is pulled from stagging and quality is unknown
+
 USB3 is not working and not activated at all
+
 Analog Audio is not working
+
 Suspend is not working, because of missing SPC Blob in u-boot
