@@ -211,14 +211,11 @@ type `o` this will clear out any partitions on the drive
 
 `nano /etc/apt/sources.list`
 
-	# deb http://deb.debian.org/debian/ bullseye main
+	# deb http://deb.debian.org/debian/ sid main
 	
-	deb http://deb.debian.org/debian bullseye main contrib non-free
-	deb-src http://deb.debian.org/debian/ bullseye main contrib non-free
+	deb http://deb.debian.org/debian sid main contrib non-free
+	deb-src http://deb.debian.org/debian/ sid main contrib non-free
 	
-	deb http://security.debian.org/debian-security bullseye-security main contrib non-free
-	deb-src http://security.debian.org/debian-security bullseye-security main contrib non-free
-
 now update the system with
 
 	apt update
@@ -285,6 +282,10 @@ now update the system with
 `tune2fs -c 1 /dev/mmcblk1p1`
 
 `tune2fs -c 1 /dev/mmcblk1p2`
+
+#### 15.)	Remove unnecessary packages, which are no longer required.
+
+`apt purge qemu-guest-agent`
 
 #### Done, enjoy your setup.
 
