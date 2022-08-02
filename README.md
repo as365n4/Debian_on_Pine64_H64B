@@ -31,7 +31,7 @@ click into the black area of the VMs Window to capture Mouse and Keyboard
 , partition manually the disk image as follows
 
 	Partition 1: Size 100 M, Name efi, Use as EFI System Partition, Bootable flag on 
-	Partition 2: Size 100 M, Name boot, Use as Ext 2 file system, Mount point /boot   Bootable flag off
+	Partition 2: Size 200 M, Name boot, Use as Ext 2 file system, Mount point /boot   Bootable flag off
 	Partition 3: Size max, Use as Ext 4 journaling file system, Mount point /   Bootable flag off
 
 confirm that you don’t want to create Swap Space by clicking `<NO>`
@@ -70,17 +70,22 @@ and finish the installation, once finished reboot into the newly installed syste
 		KERNEL /vmlinuz
 		INITRD /initrd.img
 		FDT /dtbs/allwinner/sun50i-h6-pine-h64-model-b.dtb
-		APPEND console=tty1 root=LABEL=root rw rootwait
+		APPEND console=ttyS0,115200 console=tty1 root=LABEL=root rw rootwait
 
-`apt purge grub-efi-arm64`
+#### 6.)	Remove unnecessary packages, which are no longer required
 
-`apt autoremove`
-
-`apt autoclean`
+	apt purge grub-efi-arm64
+	apt purge qemu-guest-agent
+	apt autoremove
+	apt autoclean
+	
+	rm -rf /boot/grub
+	
+	rm /etc/systemd/system/getty.target.wants/serial-getty@ttyAMA0.service
 
 `shutdown -h now`
 
-#### 6.)	Creating tar archives of our VM
+#### 7.)	Creating tar archives of our VM
 
 `sudo modprobe nbd max_part=8`
 
@@ -100,25 +105,25 @@ and finish the installation, once finished reboot into the newly installed syste
 
 `sudo qemu-nbd -d /dev/nbd0`
 
-#### 7.)	Install Cross Compiler for building U-Boot on our  x86_64 Debian Host
+#### 8.)	Install Cross Compiler for building U-Boot on our  x86_64 Debian Host
 
 `sudo apt install gcc make bc git device-tree-compiler build-essential libssl-dev python3-dev bison flex libssl-dev swig gcc-aarch64-linux-gnu gcc-arm-none-eabi`
 
-#### 8.)	Build U-Boot on our x86_64 Debian Host
+#### 9.)	Build U-Boot on our x86_64 Debian Host
 
 `cd /home/youruser/assets/`
 
 	git clone https://github.com/ARM-software/arm-trusted-firmware
 	cd arm-trusted-firmware
-	git tag					remember last stable (v2.4)
-	git checkout v2.4
+	git tag					remember last stable (v2.7)
+	git checkout v2.7
 	make CROSS_COMPILE=aarch64-linux-gnu- PLAT=sun50i_h6 bl31
 	cd ..
 	
 	git clone git://git.denx.de/u-boot.git
 	cd u-boot
-	git tag					remember last stable (v2021.01)
-	git checkout v2021.01
+	git tag					remember last stable (v2022.04)
+	git checkout v2022.04
 	ln -s /home/youruser/assets/arm-trusted-firmware/build/sun50i_h6/release/bl31.bin bl31.bin
 	make CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.bin pine_h64_defconfig
 	make -j4 CROSS_COMPILE=aarch64-linux-gnu- BL31=bl31.bin
@@ -126,18 +131,18 @@ and finish the installation, once finished reboot into the newly installed syste
 	cp -r /home/youruser/assets/u-boot/u-boot-sunxi-with-spl.bin /home/youruser/assets/
 	cd ..
 
-#### 9.)	Flashing Debian to eMMC for our Pine64 H64B SBC
+#### 10.)	Flashing Debian to eMMC for our Pine64 H64B SBC   (16GB SD-Card with 31116288 sectors)
 
 `sudo fdisk /dev/sdX`
 
 type `o` this will clear out any partitions on the drive
 , type `p` to list partitions, there should be no partitions left
 , type `n` for new partition, then `p` for primary, `1` for the first partition on the drive
-, `2048` for the first sector, and `647167` for the last sector, then type `a`
+, `32768` for the first sector, and `647168` for the last sector, then type `a`
 , then type `n` for new partition, then `p` for primary, `2` for the second partition on the drive
-, `647168` for the first sector, and `28211199` for the last sector, then type `n`
-, then `p` for primary, `3` for the third partition on the drive, `28211200` for the first sector
-, and `30308351` for the last sector, then type `t`, and `3` for the third partition, and `82` for the Hex Code
+, `647169` for the first sector, and `29019134` for the last sector, then type `n`
+, then `p` for primary, `3` for the third partition on the drive, `29019135` for the first sector
+, and `31116287` for the last sector, then type `t`, and `3` for the third partition, and `82` for the Hex Code
 , then write the partition table and exit by typing `w`
 
 `cd /home/youruser/assets`
@@ -152,7 +157,7 @@ type `o` this will clear out any partitions on the drive
 	sudo tar xzvpf /home/youruser/assets/debian-aarch64-bootfs.tar.gz .
 	sync
 	cd ..
-	sudo cp /home/youruser/assets/sun50i-h6-pine-h64-model-b.dtb /home/youruser/assets/boot/dtbs/allwinner/sun50i-h6-pine-h64-model-b.dtb
+	
 	sudo umount /home/youruser/assets/boot
 
 	sudo mkfs.ext4 -L root /dev/sdX2
@@ -162,7 +167,9 @@ type `o` this will clear out any partitions on the drive
 	sync
 	cd ..
 	
-`sudo nano /home/youruser/assets/root/etc/fstab`	amend as below
+	sudo mkswap /dev/sdX3
+
+`sudo nano /home/youruser/assets/root/etc/fstab`	amend as below, use `sudo blkid` to find UUID for `mmcblkXpX`
 
 	# /etc/fstab: static file system information.
 	#
@@ -174,9 +181,9 @@ type `o` this will clear out any partitions on the drive
 	# Please run 'systemctl daemon-reload' after making changes here.
 	#
 	# <file system> <mount point> <type> <options> <dump> <pass>
-	/dev/mmcblk1p1 /boot		ext2		defaults  		0  2
-	/dev/mmcblk1p2 /		ext4		errors=remount-ro  	0  1
-	/dev/mmcblk1p3 swap		swap		defaults 		0  0
+	UUID=XXX	/boot		ext2		defaults  		0  2
+	UUID=XXX	/		ext4		errors=remount-ro  	0  1
+	UUID=XXX	swap		swap		defaults 		0  0
 	/dev/sr0       /media/cdrom0	udf,iso9660	user,noauto		0  0
 
 `sudo nano /home/youruser/assets/root/etc/network/interfaces`	change interface to eth0
@@ -197,25 +204,33 @@ type `o` this will clear out any partitions on the drive
 
 `sudo umount /home/youruser/assets/root`
 
-`sudo mkswap /dev/sdX3`
-
 `cd home/youruser/assets/`
 
 `sudo dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8 conv=notrunc`
 
-#### 10.)	Install the eMMC-Module onto your Pine64 H64B SBC, connecting HDMI, Mouse and Keyboard and power it up and log-in as root.
+#### 11.)	Install the eMMC-Module onto your Pine64 H64B SBC, connecting HDMI, Mouse and Keyboard and power it up and log-in as `root`.
 
 `ip a`	check that network is working
+`rm -rf /boot/efi`   remove unnecessary folder
+`systemctl disable serial-getty@ttyAMA0.service`   remove unnecessary service
 
-#### 11.)	Activate non-free repositories of Debian, edit the config of Debians Advanced Package Tool as below
+#### 12.)	Activate non-free repositories of Debian, edit the config of Debians Advanced Package Tool as below
 
 `nano /etc/apt/sources.list`
 
-	# deb http://deb.debian.org/debian/ sid main
+	# deb http://deb.debian.org/debian/ bookworm main
 	
-	deb http://deb.debian.org/debian sid main contrib non-free
-	deb-src http://deb.debian.org/debian/ sid main contrib non-free
+	deb http://deb.debian.org/debian bookworm main contrib non-free
+	deb-src http://deb.debian.org/debian/ bookworm main contrib non-free
 	
+	deb http://security.debian.org/debian-security bookworm-security main contrib non-free
+	deb-src http://security.debian.org/debian-security bookworm-security main contrib non-free
+
+`nano /etc/sysctl.conf`   ammend as below
+
+	# Uncomment the following to stop low-level messages on console
+	kernel.printk = 3 4 1 3
+
 now update the system with
 
 	apt update
@@ -224,52 +239,34 @@ now update the system with
 	apt autoremove
 	apt autoclean
 
-#### 12.)	Add missing WiFi/Bluetooth driver for Pine64 H64B board, install the firmware for RTL8723BS Chipset with
+#### 13.)	Add missing WiFi/Bluetooth firmware for RTL8723BS Chipset
 
 `apt install firmware-realtek`
 
 `shutdown -r now`	reboots the system
 
-#### 13.)	Configure WiFi, working Ethernet connection required
+#### 14.)	Configure WiFi, working Ethernet connection required
 
-`apt install iw iwd`
+`apt install network-manager`
 
-	systemctl enable iwd.service	installs wireless service iwd
-	systemctl start iwd.service	starts iwd
-	systemctl status iwd.service	check if iwd is running
-
-	iwctl	 			bash changes to iwd interactive prompt
-
-	device list			shows all wireless devices
-	device wlan0 show		shows details about wireless device
-	station wlan0 scan		scans for wireless networks
-	station wlan0 get-networks	shows all available wireless networks
-	station wlan0 connect SSID	connects to specified network, may ask for passphrase
-	station wlan0 show		check connection status of wireless network
-
-	known-networks list		shows all previously connected wireless networks
-	known-networks SSID forget	deletes previously connected wireless network
-
-	quit				reverts back to bash
-
-`nano /etc/network/interfaces`	 amend as below to add WiFi
+`nano /etc/network/interfaces`   amend as below to activate Network-Manager
 
 	# This file describes the network interfaces available on your system
 	# and how to activate them. For more information, see interfaces(5).
 	source /etc/network/interfaces.d/*
-	
+
 	# The loopback network interface
-	auto lo
-	iface lo inet loopback
+	#auto lo
+	#iface lo inet loopback
 	
 	# The primary network interface
-	auto eth0
-	allow-hotplug eth0
-	iface eth0 inet dhcp
-	
+	#auto eth0
+	#allow-hotplug eth0
+	#iface eth0 inet dhcp
+
 	# The wireless network interface
-	auto wlan0
-	iface wlan0 inet dhcp
+	#auto wlan0
+	#iface wlan0 inet dhcp
 
 `nano /etc/resolv.conf`
 
@@ -277,15 +274,11 @@ now update the system with
 
 `shutdown -r now`	once board is up, check with `ip a` for success
 
-#### 14.)	Activate Filesystem Checks at startup
+#### 15.)	Activate Filesystem Checks at startup
 
-`tune2fs -c 1 /dev/mmcblk1p1`
-
+`tune2fs -c 1 /dev/mmcblk1p1`	use `lsblk` to find correct number for `mmcblkX`
 `tune2fs -c 1 /dev/mmcblk1p2`
 
-#### 15.)	Remove unnecessary packages, which are no longer required.
-
-`apt purge qemu-guest-agent`
 
 #### Done, enjoy your setup.
 
@@ -293,7 +286,7 @@ now update the system with
 
 #### What is working and which bit of the board is not working...?
 
-This status report is based on Debian 5.10.0-4 with Kernel 5.10.19-1
+This status report is based on Debian 5.18.0-3 with Kernel 5.18.14-1
 
 eMMC is working
 
@@ -303,7 +296,7 @@ HDMI Audio does not work
 
 Ethernet is working
 
-WiFi and Bluetooth have experimental support as driver is pulled from stagging and quality is unknown
+WiFi and Bluetooth is working
 
 USB3 is not working and not activated at all
 
