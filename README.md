@@ -211,7 +211,9 @@ type `o` this will clear out any partitions on the drive
 #### 11.)	Install the eMMC-Module onto your Pine64 H64B SBC, connecting HDMI, Mouse and Keyboard and power it up and log-in as `root`.
 
 `ip a`	check that network is working
+
 `rm -rf /boot/efi`   remove unnecessary folder
+
 `systemctl disable serial-getty@ttyAMA0.service`   remove unnecessary service
 
 #### 12.)	Activate non-free repositories of Debian, edit the config of Debians Advanced Package Tool as below
@@ -277,6 +279,7 @@ now update the system with
 #### 15.)	Activate Filesystem Checks at startup
 
 `tune2fs -c 1 /dev/mmcblk1p1`	use `lsblk` to find correct number for `mmcblkX`
+
 `tune2fs -c 1 /dev/mmcblk1p2`
 
 
